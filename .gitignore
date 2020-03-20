@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vscode
+.vscode/
+
+# Mac
+.DS_Store
+
+# Data
+checkpoints/*
+useless/
