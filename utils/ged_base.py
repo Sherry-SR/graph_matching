@@ -64,8 +64,10 @@ class GedBase(object):
         A2 = nx.to_numpy_array(self.g2)
 
         # substitute cost
-        cost_matrix[:self.N, :self.M] = np.einsum('ij,ij->i', A1, A1)[:, None] + np.einsum('ij,ij->i', A2, A2) - 2*np.dot(A1, A2.T)
-        
+        for i in range(self.N):
+            for j in range(self.M):
+                cost_matrix[i, j] = np.abs(A1[i] - A2[j]).sum()
+
         # insert cost
         insert_cost_matrix = np.full((self.M, self.M), float('inf'))
         insert_cost_matrix[np.diag_indices(self.M)] = np.abs(A2).sum(axis = 0)
