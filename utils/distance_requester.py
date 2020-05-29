@@ -6,7 +6,7 @@ import networkx as nx
 from scipy import stats
 from scipy.spatial import distance
 from scipy.optimize import linear_sum_assignment
-from utils.ged.ged_tune import GedTune
+from utils.ged_base import GedBase
 class distance_requester(object):
     def __init__(self, conn1, conn2, eig_thresh=10**(-3)):
         self.conn1 = conn1
@@ -111,6 +111,6 @@ class distance_requester(object):
 
         #dist_fun = gm.GraphEditDistance(1,1,1,1)
         #dist = dist_fun.compare([G1, G2], None)[0, 1]
-        GED = GedTune(G1, G2)
+        GED = GedBase(G1, G2)
         dist = GED.distance()
         return dist

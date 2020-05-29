@@ -1,5 +1,6 @@
 from scipy import optimize
 import numpy as np
+import networkx as nx
 
 def linear_sum_assignment_with_inf(cost_matrix):
     cost_matrix = np.asarray(cost_matrix)
@@ -27,18 +28,17 @@ def linear_sum_assignment_with_inf(cost_matrix):
 class GedBase(object):
     """ 
     Base class from Graph Edit Distance
-    Implementation inspired by @haakondr
     """
     
-    def __init__(self, g1, g2, greedy, verbose):
+    def __init__(self, g1, g2, greedy=False, verbose=False):
         """
         Class constructor
         """
         self.g1 = g1
         self.g2 = g2
         
-        self.N = 0
-        self.M = 0
+        self.N = g1.number_of_nodes()
+        self.M = g2.number_of_nodes()
         
         self.greedy = greedy
         self.verbose = verbose
@@ -60,37 +60,31 @@ class GedBase(object):
         """        
         cost_matrix = np.zeros((self.N+self.M, self.N+self.M))
 
-        for i in range(self.N):
-            for j in range(self.M):
-                cost_matrix[i, j] = self.substitute_cost(i, j)
+        A1 = nx.to_numpy_array(self.g1)
+        A2 = nx.to_numpy_array(self.g2)
+
+        # substitute cost
+        cost_matrix[:self.N, :self.M] = np.einsum('ij,ij->i', A1, A1)[:, None] + np.einsum('ij,ij->i', A2, A2) - 2*np.dot(A1, A2.T)
         
-        for i in range(self.M):
-            for j in range(self.M):
-                cost_matrix[i+self.N, j] = self.insert_cost(i, j)
-                
-        for i in range(self.N):
-            for j in range(self.N):
-                cost_matrix[i, j+self.M] = self.delete_cost(i, j)
+        # insert cost
+        insert_cost_matrix = np.full((self.M, self.M), float('inf'))
+        insert_cost_matrix[np.diag_indices(self.M)] = np.abs(A2).sum(axis = 0)
+        cost_matrix[self.N:, :self.M] = insert_cost_matrix
+
+        # delete cost
+        delete_cost_matrix = np.full((self.N, self.N), float('inf'))
+        delete_cost_matrix[np.diag_indices(self.N)] = np.abs(A1).sum(axis = 0)
+        cost_matrix[:self.N, self.M:] = delete_cost_matrix
         
         return cost_matrix
-                
-    def insert_cost(self, i, j):
+
+    def distance(self):
         """
-        Cost of node j insertion
+        Total distance between the two graphs
         """
-        raise NotImplementedError
-    
-    def delete_cost(self, i, j):
-        """
-        Cost of node i deletion
-        """
-        raise NotImplementedError
-        
-    def substitute_cost(self, i, j):
-        """
-        Cost of substitution of node i from g1 with node j of g2
-        """
-        raise NotImplementedError
+        _, cols, costs = self.calculate_costs()
+        self.Mindices = cols[:self.N]
+        return np.sum(costs)
         
     def calculate_costs(self):
         """
@@ -139,13 +133,6 @@ class GedBase(object):
             costs = np.array(cost_matrix[row_ind, col_ind])
         return row_ind, col_ind, costs
         
-    def distance(self):
-        """
-        Total distance between the two graphs
-        """
-        _, _, costs = self.calculate_costs()
-        return np.sum(costs)
-        
     def norm_distance(self):
         """
         Distance normalized on the size of the graphs
@@ -158,7 +145,7 @@ class GedBase(object):
         for row in self.make_cost_matrix():
             for col in row:
                 if col == float('inf'):
-                    print("Inf\t")
+                    print("Inf\t", end='')
                 else:
-                    print("%.2f\t" % float(col))
-            print("\n")
+                    print("%.2f\t" % float(col), end='')
+            print("\n", end='')

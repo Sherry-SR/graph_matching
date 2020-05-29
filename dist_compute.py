@@ -47,17 +47,19 @@ for subj in subj_list:
 logger.info('finished loading..')
 
 dist_measures = ['graphedit', 'euclidean', 'canberra', 'pearson', 'spearman']
-columns = ['dx_groups', 'times'] + dist_measures + ['pearson_p', 'spearman_p']
+columns = ['subjects', 'dx_groups', 'times'] + dist_measures + ['pearson_p', 'spearman_p']
 
 rows_list = {x:[] for x in columns}
 for i in range(len(subj_list)):
     for j in range(i+1, len(subj_list)):
         isubj = subj_list[i]
         jsubj = subj_list[j]
-        logger.info('computing: %s, %s'%(isubj, jsubj))
+        logger.info('computing: [%d] %s, [%d] %s'%(i, isubj, j, jsubj))
         flags = [df['DX_Group'].loc[isubj], df['DX_Group'].loc[jsubj]]
         flags.sort()
         flags = ''.join(flags)
+        subjects = [isubj, jsubj]
+        subjects.sort()
         for iseq in df['Times'].loc[isubj]:
             for jseq in df['Times'].loc[jsubj]:
                 seqs = [iseq, jseq]
@@ -66,6 +68,7 @@ for i in range(len(subj_list)):
                 iconn = conn_dict[isubj][iseq]
                 jconn = conn_dict[jsubj][jseq]
                 dist_req = distance_requester(iconn, jconn)
+                rows_list['subjects'].append(subjects)
                 rows_list['dx_groups'].append(flags)
                 rows_list['times'].append(seqs)
                 for dist_measure in dist_measures:
@@ -82,7 +85,7 @@ psubj_list = df[df['DX_Group'] == 'p'].index.tolist()
 flags = 'p'
 for isubj in psubj_list:
     seq_list = df['Times'].loc[isubj]
-    logger.info('computing: %s'%(isubj))
+    logger.info('computing: [%d] %s'%(i, isubj))
     for i in range(len(seq_list)):
         for j in range(i+1, len(seq_list)):
             seqs = [seq_list[i], seq_list[j]]
@@ -91,6 +94,7 @@ for isubj in psubj_list:
             iconn = conn_dict[isubj][seq_list[i]]
             jconn = conn_dict[isubj][seq_list[j]]
             dist_req = distance_requester(iconn, jconn)
+            rows_list['subjects'].append([isubj])
             rows_list['dx_groups'].append(flags)
             rows_list['times'].append(seqs)
             for dist_measure in dist_measures:
