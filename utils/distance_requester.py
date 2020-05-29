@@ -113,4 +113,4 @@ class distance_requester(object):
         #dist = dist_fun.compare([G1, G2], None)[0, 1]
         GED = GedBase(G1, G2)
         dist = GED.distance()
-        return dist
+        return dist, GED.Mindices

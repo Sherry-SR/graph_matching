@@ -47,7 +47,7 @@ for subj in subj_list:
 logger.info('finished loading..')
 
 dist_measures = ['graphedit', 'euclidean', 'canberra', 'pearson', 'spearman']
-columns = ['subjects', 'dx_groups', 'times'] + dist_measures + ['pearson_p', 'spearman_p']
+columns = ['subjects', 'dx_groups', 'times'] + dist_measures + ['graphedit_match', 'pearson_p', 'spearman_p']
 
 rows_list = {x:[] for x in columns}
 for i in range(len(subj_list)):
