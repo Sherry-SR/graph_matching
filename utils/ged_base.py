@@ -30,7 +30,7 @@ class GedBase(object):
     Base class from Graph Edit Distance
     """
     
-    def __init__(self, g1, g2, greedy=False, verbose=False):
+    def __init__(self, g1, g2, node_factor=None, greedy=False, verbose=False):
         """
         Class constructor
         """
@@ -42,6 +42,13 @@ class GedBase(object):
         
         self.greedy = greedy
         self.verbose = verbose
+
+        if node_factor is None:
+            self.node_factor1 = np.ones(self.N)
+            self.node_factor2 = np.ones(self.M)
+        else:
+            self.node_factor1 = node_factor[0]
+            self.node_factor2 = node_factor[1]
         
     def make_cost_matrix(self):
         """
@@ -60,8 +67,8 @@ class GedBase(object):
         """        
         cost_matrix = np.zeros((self.N+self.M, self.N+self.M))
 
-        A1 = nx.to_numpy_array(self.g1)
-        A2 = nx.to_numpy_array(self.g2)
+        A1 = self.node_factor1[None, :] * self.node_factor1[:, None] * nx.to_numpy_array(self.g1)
+        A2 = self.node_factor2[None, :] * self.node_factor2[:, None] * nx.to_numpy_array(self.g2)
 
         # substitute cost
         for i in range(self.N):

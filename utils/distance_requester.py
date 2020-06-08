@@ -2,7 +2,6 @@ import importlib
 
 import numpy as np
 import networkx as nx
-#import gmatch4py as gm
 from scipy import stats
 from scipy.spatial import distance
 from scipy.optimize import linear_sum_assignment
@@ -105,12 +104,9 @@ class distance_requester(object):
         vec2 = self._vectorize(self.conn2)
         return distance.canberra(vec1, vec2)
     
-    def graphedit(self):
+    def graphedit(self, node_factor = None):
         G1 = nx.from_numpy_array(self.conn1)
         G2 = nx.from_numpy_array(self.conn2)
-
-        #dist_fun = gm.GraphEditDistance(1,1,1,1)
-        #dist = dist_fun.compare([G1, G2], None)[0, 1]
-        GED = GedBase(G1, G2)
+        GED = GedBase(G1, G2, node_factor)
         dist = GED.distance()
         return dist, GED.Mindices
