@@ -66,12 +66,13 @@ def prior(theta):
         return 1
     return 0
 
-def posterior(theta, data, gamma = 0.5, T = 100):
+def posterior(theta, data, iter, gamma = 0.5, Tc = 100):
     prior_theta = prior(theta)
     if prior_theta == 0:
         return float('-inf')
     distdiff, df_dist = compute_pairwise_dist(theta, data)
     energy = [max(0, x + gamma) for x in distdiff]
+    T = Tc / np.log(iter + 2)
     return - np.sum(energy) / T + np.log(prior_theta), df_dist
 
 def transition(theta):
@@ -91,7 +92,7 @@ def metropolis_hastings(posterior_computer, transition_model, param_init, iterat
     if not os.path.exists(os.path.join(out_path, 'mcmc_output')):
         os.makedirs(os.path.join(out_path, 'mcmc_output'))
     if start_iter == 0:
-        p_new, df_dist = posterior_computer(param_init, data)
+        p_new, df_dist = posterior_computer(param_init, data, 0)
         param_list = [param_init]
         p_list = [p_new]
         accepted = [0]
@@ -106,7 +107,7 @@ def metropolis_hastings(posterior_computer, transition_model, param_init, iterat
         logger.info('continuing from iter %d/%d...' % (start_iter-1, iterations))
     for i in range(start_iter, iterations):
         theta_new =  transition_model(param_list[accepted[-1]])
-        p_new, df_dist = posterior_computer(theta_new, data)
+        p_new, df_dist = posterior_computer(theta_new, data, i)
         param_list.append(theta_new)
         p_list.append(p_new)
         if (acceptance_rule(p_list[accepted[-1]], p_new)):
@@ -122,7 +123,7 @@ def main():
     parser = argparse.ArgumentParser(description='train mcmc for graph edit distance')
     parser.add_argument('-d', '--data_dir', type=str, default='../Data/TBI/TBI_Connectomes_wSubcort', help='path to data')
     parser.add_argument('-a', '--atlas', type=str, default='../Data/TBI/atlas/Schaefer2018_116Parcels_7Networks_LookupTable.csv', help='path to atlas')
-    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp03', help='path to outputs')
+    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp04', help='path to outputs')
     parser.add_argument('-n', '--n_node', type=str, default='116', help='number of node to use for rois')
     parser.add_argument('-m', '--mode', type=str, default='DTI_det', help='mode of connectivity, DTI_det, DTI_prob, or Restbold')
     parser.add_argument('-l', '--list', type=str, default='../Results/tbi_mcmc_exp01/cv_list', help='path to train/test list')
@@ -177,10 +178,10 @@ def main():
                                                                  param_init, iterations,
                                                                  data, acceptance,
                                                                  logger, args.output_dir, start_iter)
-    logger.info('accepted p: ' + ' '.join(p_list[accepted]))
+    logger.info('accepted p: ' + ' '.join(np.array(p_list)[accepted]))
 
     data = [test_triplets, conn_dict, df_roi, networks]
-    p_test, df_dist_test = posterior(param_list[accepted[-1]], data)
+    p_test, df_dist_test = posterior(param_list[accepted[-1]], data, 0)
     with open(os.path.join(args.output_dir, 'mcmc_output', 'testing.pkl'), 'wb') as f:
         pickle.dump([param_list[accepted[-1]], p_test, df_dist_test], f)
     logger.info('testing finished!')
