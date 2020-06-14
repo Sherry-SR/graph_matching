@@ -26,7 +26,7 @@ def compute_pairwise_dist(theta, data):
     triplets, conn_dict, df_roi, networks = data
     node_factor = np.empty(len(df_roi))
     for i in range(len(networks)):
-        node_factor[df_roi['Network'] == networks[i]] = theta[i]
+        node_factor[df_roi['Network'] == networks[i]] = theta[i] / np.sum(df_roi['Network'] == networks[i])
     node_factor = [node_factor, node_factor]
     dist_dic = {}
     for tri in triplets:
@@ -36,8 +36,18 @@ def compute_pairwise_dist(theta, data):
         dist_dic[(p, c2)] = distance_requester(conn_p, conn_c2).graphedit(node_factor)
         if dist_dic.get((c1, c2)) is None:
             dist_dic[(c1, c2)] = distance_requester(conn_c1, conn_c2).graphedit(node_factor)
-    distmax = max(dist_dic.values())
-    dist_dic = {k: v/distmax for k,v in dist_dic.items()}
+    subjects = list(dist_dic.keys())
+    dx_groups = [x[0][0]+x[1][0] for x in subjects]
+    graphedit = [x[0] for x in dist_dic.values()]
+    ged_max = np.max(graphedit)
+    graphedit = list(np.array(graphedit) / ged_max)
+    graphedit_match = [x[1] for x in dist_dic.values()]
+    dist_dic = {k: v/ged_max for k,v in dist_dic.items()}
+    df_dist = pd.DataFrame({'subjects': subjects,
+                       'dx_groups':dx_groups,
+                       'times': ['s1s1']*len(subjects),
+                       'graphedit': graphedit,
+                       'graphedit_match': graphedit_match})
 
     distdiff = {}
     for tri in triplets:
@@ -47,17 +57,7 @@ def compute_pairwise_dist(theta, data):
         else:
             distdiff[p].append(dist_dic[(c1, c2)][0] - dist_dic[p, c1][0])
             distdiff[p].append(dist_dic[(c1, c2)][0] - dist_dic[p, c2][0])
-    
-    subjects = list(dist_dic.keys())
-    dx_groups = [x[0][0]+x[1][0] for x in subjects]
-    graphedit = [x[0] for x in dist_dic.values()]
-    graphedit_match = [x[1] for x in dist_dic.values()]
     distdiff = [np.array(x).mean() for x in distdiff.values()]
-    df_dist = pd.DataFrame({'subjects': subjects,
-                       'dx_groups':dx_groups,
-                       'times': ['s1s1']*len(subjects),
-                       'graphedit': graphedit,
-                       'graphedit_match': graphedit_match})
 
     return distdiff, df_dist
 
@@ -78,7 +78,7 @@ def posterior(theta, data, iter, gamma = 0.5, Tc = 100):
 def transition(theta):
     theta_new = np.random.multivariate_normal(theta, 0.01 * np.eye(len(theta)))
     theta_new[theta_new<0] = 0
-    theta_new = theta_new / np.sum(theta_new.sum)
+    theta_new = theta_new / np.sum(theta_new)
     return theta_new
 
 def acceptance(p, p_new):
