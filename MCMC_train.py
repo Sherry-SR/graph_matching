@@ -125,7 +125,7 @@ def main():
     parser = argparse.ArgumentParser(description='train mcmc for graph edit distance')
     parser.add_argument('-d', '--data_dir', type=str, default='../Data/TBI/TBI_Connectomes_wSubcort', help='path to data')
     parser.add_argument('-a', '--atlas', type=str, default='../Data/TBI/atlas/Schaefer2018_116Parcels_7Networks_LookupTable.csv', help='path to atlas')
-    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp05', help='path to outputs')
+    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp04', help='path to outputs')
     parser.add_argument('-n', '--n_node', type=str, default='116', help='number of node to use for rois')
     parser.add_argument('-m', '--mode', type=str, default='DTI_det', help='mode of connectivity, DTI_det, DTI_prob, or Restbold')
     parser.add_argument('-l', '--list', type=str, default='../Results/tbi_mcmc_exp01/cv_list', help='path to train/test list')
