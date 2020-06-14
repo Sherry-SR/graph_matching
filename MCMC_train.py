@@ -78,6 +78,7 @@ def posterior(theta, data, iter, gamma = 0.5, Tc = 100):
 def transition(theta):
     theta_new = np.random.multivariate_normal(theta, 0.01 * np.eye(len(theta)))
     theta_new[theta_new<0] = 0
+    theta_new = theta_new / np.sum(theta_new.sum)
     return theta_new
 
 def acceptance(p, p_new):
@@ -92,6 +93,7 @@ def metropolis_hastings(posterior_computer, transition_model, param_init, iterat
     if not os.path.exists(os.path.join(out_path, 'mcmc_output')):
         os.makedirs(os.path.join(out_path, 'mcmc_output'))
     if start_iter == 0:
+        param_init = param_init / np.sum(param_init)
         p_new, df_dist = posterior_computer(param_init, data, 0)
         param_list = [param_init]
         p_list = [p_new]
@@ -123,7 +125,7 @@ def main():
     parser = argparse.ArgumentParser(description='train mcmc for graph edit distance')
     parser.add_argument('-d', '--data_dir', type=str, default='../Data/TBI/TBI_Connectomes_wSubcort', help='path to data')
     parser.add_argument('-a', '--atlas', type=str, default='../Data/TBI/atlas/Schaefer2018_116Parcels_7Networks_LookupTable.csv', help='path to atlas')
-    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp04', help='path to outputs')
+    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp05', help='path to outputs')
     parser.add_argument('-n', '--n_node', type=str, default='116', help='number of node to use for rois')
     parser.add_argument('-m', '--mode', type=str, default='DTI_det', help='mode of connectivity, DTI_det, DTI_prob, or Restbold')
     parser.add_argument('-l', '--list', type=str, default='../Results/tbi_mcmc_exp01/cv_list', help='path to train/test list')
