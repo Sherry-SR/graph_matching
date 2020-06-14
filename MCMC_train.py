@@ -29,7 +29,7 @@ def compute_pairwise_dist(theta, data):
         node_factor[df_roi['Network'] == networks[i]] = theta[i]
     node_factor = [node_factor, node_factor]
     dist_dic = {}
-    distdiff = []
+    distdiff = {}
     for tri in triplets:
         (p, c1, c2) = tri
         conn_p, conn_c1, conn_c2 = conn_dict[p]['s1'], conn_dict[c1]['s1'], conn_dict[c2]['s1']
@@ -37,12 +37,16 @@ def compute_pairwise_dist(theta, data):
         dist_dic[(p, c2)] = distance_requester(conn_p, conn_c2).graphedit(node_factor)
         if dist_dic.get((c1, c2)) is None:
             dist_dic[(c1, c2)] = distance_requester(conn_c1, conn_c2).graphedit(node_factor)
-        distdiff.append(dist_dic[(c1, c2)][0] - dist_dic[p, c1][0])
-        distdiff.append(dist_dic[(c1, c2)][0] - dist_dic[p, c2][0])
+        if distdiff.get(p) is None:
+            distdiff[p] = []
+        else:
+            distdiff[p].append(dist_dic[(c1, c2)][0] - dist_dic[p, c1][0])
+            distdiff[p].append(dist_dic[(c1, c2)][0] - dist_dic[p, c2][0])
     subjects = list(dist_dic.keys())
     dx_groups = [x[0][0]+x[1][0] for x in subjects]
     graphedit = [x[0] for x in dist_dic.values()]
     graphedit_match = [x[1] for x in dist_dic.values()]
+    distdiff = [np.array(x).mean() for x in distdiff.values()]
     df_dist = pd.DataFrame({'subjects': subjects,
                        'dx_groups':dx_groups,
                        'times': ['s1s1']*len(subjects),
@@ -111,7 +115,7 @@ def main():
     parser = argparse.ArgumentParser(description='train mcmc for graph edit distance')
     parser.add_argument('-d', '--data_dir', type=str, default='../Data/TBI/TBI_Connectomes_wSubcort', help='path to data')
     parser.add_argument('-a', '--atlas', type=str, default='../Data/TBI/atlas/Schaefer2018_116Parcels_7Networks_LookupTable.csv', help='path to atlas')
-    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp01', help='path to outputs')
+    parser.add_argument('-o', '--output_dir', type=str, default='../Results/tbi_mcmc_exp02', help='path to outputs')
     parser.add_argument('-n', '--n_node', type=str, default='116', help='number of node to use for rois')
     parser.add_argument('-m', '--mode', type=str, default='DTI_det', help='mode of connectivity, DTI_det, DTI_prob, or Restbold')
     parser.add_argument('-l', '--list', type=str, default='../Results/tbi_mcmc_exp01/cv_list', help='path to train/test list')
