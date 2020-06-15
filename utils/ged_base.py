@@ -69,8 +69,8 @@ class GedBase(object):
         """        
         cost_matrix = np.zeros((self.N+self.M, self.N+self.M))
 
-        A1 = self.node_factor1[None, :] * self.node_factor1[:, None] * nx.to_numpy_array(self.g1)
-        A2 = self.node_factor2[None, :] * self.node_factor2[:, None] * nx.to_numpy_array(self.g2)
+        A1 = nx.to_numpy_array(self.g1)
+        A2 = nx.to_numpy_array(self.g2)
 
         # substitute cost
         for i in range(self.N):
@@ -87,6 +87,8 @@ class GedBase(object):
         delete_cost_matrix[np.diag_indices(self.N)] = np.abs(A1).sum(axis = 0)
         cost_matrix[:self.N, self.M:] = delete_cost_matrix
         
+        node_factor = np.concatenate((self.node_factor1, self.node_factor2))
+        cost_matrix = node_factor[None, :] * node_factor[:, None] * cost_matrix
         return cost_matrix
 
     def distance(self):

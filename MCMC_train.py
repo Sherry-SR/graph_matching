@@ -66,27 +66,26 @@ def prior(theta):
         return 1
     return 0
 
-def posterior(theta, data, iter, gamma = 0.5, Tc = 100):
+def posterior(theta, data, gamma = 0.5):
     prior_theta = prior(theta)
     if prior_theta == 0:
         return float('-inf')
     distdiff, df_dist = compute_pairwise_dist(theta, data)
     energy = [max(0, x + gamma) for x in distdiff]
-    T = Tc / np.log(iter + 2)
-    return - np.sum(energy) / T + np.log(prior_theta), df_dist
+    return - np.sum(energy) + np.log(prior_theta), df_dist
 
 def transition(theta):
     theta_new = np.random.multivariate_normal(theta, 0.01 * np.eye(len(theta)))
     theta_new[theta_new<0] = 0
-    theta_new = theta_new / np.sum(theta_new)
     return theta_new
 
-def acceptance(p, p_new):
+def acceptance(p, p_new, iter, Tc = 0.1):
+    T = Tc / np.log(iter + 1)
     if p_new > p:
         return True
     else:
         accept = np.random.uniform(0,1)
-        return (accept < (np.exp(p_new - p)))
+        return (accept < (np.exp((p_new - p) / T)))
 
 def metropolis_hastings(posterior_computer, transition_model, param_init, iterations, data, acceptance_rule, logger, out_path, start_iter = 0):
     logger.info('metropolis hasting...')
@@ -94,7 +93,7 @@ def metropolis_hastings(posterior_computer, transition_model, param_init, iterat
         os.makedirs(os.path.join(out_path, 'mcmc_output'))
     if start_iter == 0:
         param_init = param_init / np.sum(param_init)
-        p_new, df_dist = posterior_computer(param_init, data, 0)
+        p_new, df_dist = posterior_computer(param_init, data)
         param_list = [param_init]
         p_list = [p_new]
         accepted = [0]
@@ -109,10 +108,10 @@ def metropolis_hastings(posterior_computer, transition_model, param_init, iterat
         logger.info('continuing from iter %d/%d...' % (start_iter-1, iterations))
     for i in range(start_iter, iterations):
         theta_new =  transition_model(param_list[accepted[-1]])
-        p_new, df_dist = posterior_computer(theta_new, data, i)
+        p_new, df_dist = posterior_computer(theta_new, data)
         param_list.append(theta_new)
         p_list.append(p_new)
-        if (acceptance_rule(p_list[accepted[-1]], p_new)):
+        if (acceptance_rule(p_list[accepted[-1]], p_new, i)):
             accepted.append(i)
         else:
             rejected.append(i)
@@ -183,7 +182,7 @@ def main():
     logger.info('accepted p: ' + ' '.join(np.array(p_list)[accepted]))
 
     data = [test_triplets, conn_dict, df_roi, networks]
-    p_test, df_dist_test = posterior(param_list[accepted[-1]], data, 0)
+    p_test, df_dist_test = posterior(param_list[accepted[-1]], data)
     with open(os.path.join(args.output_dir, 'mcmc_output', 'testing.pkl'), 'wb') as f:
         pickle.dump([param_list[accepted[-1]], p_test, df_dist_test], f)
     logger.info('testing finished!')
